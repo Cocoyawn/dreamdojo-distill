@@ -1,0 +1,56 @@
+job:
+  project: dreamdojo
+  group: exp1201
+  name: piper_vertical_1440_640_fps10
+
+trainer:
+  callbacks:
+    every_n_sample_reg:
+      fps: 10
+    every_n_sample_ema:
+      fps: 10
+
+checkpoint:
+  load_path: /project/peilab/srk/wmpo_workspace/DreamDojo/checkpoints/2B_pretrain/iter_000140000
+  load_training_state: false
+  strict_resume: false
+
+model_parallel:
+  context_parallel_size: 1
+
+model:
+  config:
+    state_t: 4
+    net:
+      action_dim: 384
+      temporal_compression_ratio: 4
+      num_action_per_chunk: 12
+      zero_init_action_embedder: false
+
+dataloader_train:
+  batch_size: 4
+
+  dataset:
+    num_frames: 13
+    height: 1440
+    width: 640
+    video_key: video.cam_vertical
+    fps: 10
+    dataset_path:
+      - /project/peilab/ysunem/ziwei_liu/DreamDojo/datasets/piper_insert_mouse_battery_lerobot
+    data_split: train
+    single_base_index: false
+    deterministic_uniform_sampling: false
+
+dataloader_val:
+  dataset:
+    num_frames: 13
+    height: 1440
+    width: 640
+    video_key: video.cam_vertical
+    fps: 10
+    dataset_path:
+      - /project/peilab/ysunem/ziwei_liu/DreamDojo/datasets/piper_insert_mouse_battery_lerobot
+    data_split: train
+    single_base_index: false
+    deterministic_uniform_sampling: false
