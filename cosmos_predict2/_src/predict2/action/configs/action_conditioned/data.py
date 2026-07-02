@@ -98,7 +98,7 @@ dreamdojo_13frame_480_640_val_dataset = L(MultiVideoActionDataset)(
 )
 
 
-piper_dataset_path = ["/project/peilab/ysunem/ziwei_liu/DreamDojo/datasets/piper_insert_mouse_battery_lerobot"]
+piper_dataset_path = ["datasets/piper_insert_mouse_battery_lerobot"]
 gr00t_customized_piper_dataset = L(MultiVideoActionDataset)(
     num_frames=13,
     dataset_path=piper_dataset_path,

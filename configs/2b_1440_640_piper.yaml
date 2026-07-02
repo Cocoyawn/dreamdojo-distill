@@ -37,7 +37,7 @@ dataloader_train:
     video_key: video.cam_vertical
     fps: 10
     dataset_path:
-      - /project/peilab/srk/wmpo_workspace/piper_insert_mouse_battery_lerobot
+      - datasets/piper_insert_mouse_battery_lerobot
     data_split: train
     single_base_index: false
     deterministic_uniform_sampling: false
@@ -50,7 +50,7 @@ dataloader_val:
     video_key: video.cam_vertical
     fps: 10
     dataset_path:
-      - /project/peilab/srk/wmpo_workspace/piper_insert_mouse_battery_lerobot
+      - datasets/piper_insert_mouse_battery_lerobot
     data_split: train
     single_base_index: false
     deterministic_uniform_sampling: false

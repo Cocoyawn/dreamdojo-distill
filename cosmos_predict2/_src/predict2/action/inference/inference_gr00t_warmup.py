@@ -63,12 +63,24 @@ def parse_arguments() -> argparse.Namespace:
         help="Path to the checkpoint. If not provided, will use the one specify in the config",
     )
     parser.add_argument("--s3_cred", type=str, default="credentials/s3_checkpoint.secret")
-    # parser.add_argument(
-    #     "--resolution",
-    #     type=str,
-    #     default="none",
-    #     help="Resolution of the video (H,W). Be default it will use model trained resolution. 9:16",
-    # )
+    parser.add_argument(
+        "--resolution",
+        type=str,
+        default=None,
+        help="Video resolution as 'H,W'. Must match teacher training resolution to keep teacher in-distribution.",
+    )
+    parser.add_argument(
+        "--video_key",
+        type=str,
+        default=None,
+        help="LeRobot video key. For piper 3-view stack use 'video.cam_vertical'; overrides groot_configs default.",
+    )
+    parser.add_argument(
+        "--fps",
+        type=int,
+        default=None,
+        help="Frame rate to sample from source video. Must match teacher training fps (piper: 10).",
+    )
     parser.add_argument("--input_video_root", type=str, default="bridge/annotation/test_100", help="Action root")
     parser.add_argument("--save_root", type=str, default="results/image2world", help="Save root")
 
@@ -184,7 +196,12 @@ def main():
 
     logger.info(f"Using dataset path: {dataset_path}")
     logger.info(f"Using dataset mixing weights: {dataset_mixing_weights}")
-    dataset = MultiVideoActionDataset(
+
+    if args.resolution is not None:
+        _h, _w = [int(x) for x in args.resolution.split(",")]
+    else:
+        _h, _w = None, None
+    dataset_kwargs = dict(
         num_frames=13,
         dataset_path=dataset_path,
         dataset_mixing_weights=dataset_mixing_weights,
@@ -192,6 +209,15 @@ def main():
         single_base_index=False,
         restrict_len=None,
     )
+    if _h is not None:
+        dataset_kwargs["height"] = _h
+        dataset_kwargs["width"] = _w
+    if args.video_key is not None:
+        dataset_kwargs["video_key"] = args.video_key
+    if args.fps is not None:
+        dataset_kwargs["fps"] = args.fps
+    logger.info(f"MultiVideoActionDataset kwargs: {dataset_kwargs}")
+    dataset = MultiVideoActionDataset(**dataset_kwargs)
 
     # Initialize the inference handler with context parallel support
     video2world_cli = ActionVideo2WorldInference(

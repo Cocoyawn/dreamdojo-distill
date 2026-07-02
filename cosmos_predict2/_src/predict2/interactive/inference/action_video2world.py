@@ -407,6 +407,7 @@ class ActionStreamingInference:
         seed: int,
         start_frame_idx: int,
         max_frames: int,
+        fps: int = 4,
         # cache_frame_size: int,
     ) -> torch.Tensor:
         # Load input video and extract conditioning frames
@@ -475,7 +476,7 @@ class ActionStreamingInference:
             data_batch = self._prepare_data_batch(
                 video_b_c_t_h_w=video_b_c_t_h_w,
                 actions_np=chunk_actions,
-                fps=4,
+                fps=fps,
                 num_latent_conditional_frames=0,
             )
 
@@ -492,8 +493,13 @@ class ActionStreamingInference:
                 if isinstance(v, torch.Tensor) and torch.is_floating_point(v):
                     data_batch[k] = v.to(dtype=self.model.tensor_kwargs["dtype"])  # typically bf16
 
-            # Use model helper to construct condition on this batch
-            _, x0, condition, _ = self.model.get_data_and_condition(data_batch)
+            # Use model helper to construct condition on this batch.
+            # self_forcing model returns 4-tuple, warmup model returns 3-tuple.
+            _result = self.model.get_data_and_condition(data_batch)
+            if len(_result) == 4:
+                _, x0, condition, _ = _result
+            else:
+                _, x0, condition = _result
 
             # Ensure latent frames used for conditioning match model precision (bf16)
             x0 = x0.to(dtype=self.model.tensor_kwargs["dtype"])

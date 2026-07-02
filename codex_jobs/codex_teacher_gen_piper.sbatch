@@ -47,5 +47,6 @@ torchrun --nnodes=$NNODES --nproc_per_node=$NPROC \
   --experiment=dreamdojo_2b_1440_640_piper \
   --ckpt_path checkpoints/dreamdojo-piper-vertical-1440-640-fps10-iter30000/model \
   --save_root datasets/piper_warmup_regenerated_4step \
+  --resolution 1440,640 --video_key video.cam_vertical --fps 10 \
   --guidance 0 --chunk_size 12 --start "${START:-0}" --end "${END:-10000}" \
   --query_steps 0,9,18,27,34 --context_parallel_size 1

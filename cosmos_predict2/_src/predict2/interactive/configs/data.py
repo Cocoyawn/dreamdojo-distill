@@ -57,6 +57,7 @@ dataset_gr00t_pretrain_warmup = L(ActionDatasetSFWarmup)(
 dataset_gr00t_piper_warmup = L(ActionDatasetSFWarmup)(
     data_path="datasets/piper_warmup_regenerated_4step",
     cr1_embeddings_path="datasets/cr1_empty_string_text_embeddings.pt",
+    fps=10,
 )
 
 dataset_gr00t_old_gr1_dreamdojo_warmup = L(ActionDatasetSFWarmup)(

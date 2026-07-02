@@ -58,6 +58,13 @@ credentials/
 # Logs
 *.log
 logs/
+dreamdojo_logs/
+
+# Data / model artifact directories (large binaries)
+checkpoints/
+datasets/
+results/
+hf_cache/
 
 # Debug / Output
 debug/

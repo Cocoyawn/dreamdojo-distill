@@ -24,11 +24,11 @@ import torch
 
 from cosmos_predict2._src.imaginaire.attention.utils import safe_log as log
 
-NATTEN_MIN_RELEASE_VERSION = [0, 21, 5]
+NATTEN_MIN_RELEASE_VERSION = [0, 21, 0]
 # 0.21.5.dev1 patches some varlen issues
 # 0.21.5.dev2 adds torch compile support
 # 0.21.5.dev3 fixes a few compat issues for older torch versions
-NATTEN_MIN_DEV_VERSION = ([0, 21, 5], 3)
+NATTEN_MIN_DEV_VERSION = ([0, 21, 0], 0)
 
 
 def natten_supported() -> bool:
