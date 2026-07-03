@@ -1,5 +1,5 @@
 #!/bin/bash
-# Stage 2: warmup distillation. 4 GPUs default (override with NPROC=).
+# Stage 2: warmup distillation. 8 GPUs default (override with NPROC=).
 # Local equivalent of codex_jobs/codex_warmup_piper.sbatch.
 
 cd "$(dirname "$0")/.."
@@ -15,7 +15,7 @@ if [ -f "$NVIDIA_DIR/cuda_runtime/lib/libcudart.so.12" ]; then
 fi
 
 NNODES=${NNODES:-1}
-NPROC=${NPROC:-4}
+NPROC=${NPROC:-8}
 MASTER_ADDR=${MASTER_ADDR:-localhost}
 MASTER_PORT=${MASTER_PORT:-12341}
 NODE_RANK=${NODE_RANK:-0}

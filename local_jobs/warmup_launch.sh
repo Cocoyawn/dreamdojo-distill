@@ -2,16 +2,16 @@
 # Wrapper around warmup.sh with named modes and safer defaults.
 #
 # Modes:
-#   dryrun   —  4 GPU × batch=1 × 200 iter, wandb offline. Use to catch OOM.
-#   small    —  4 GPU × batch=2 × 2000 iter, wandb online. Use to check convergence.
-#   full     —  4 GPU × batch=2 × 10000 iter, wandb online. Recommended full run.
+#   dryrun   —  8 GPU × batch=1 × 200 iter, wandb offline. Use to catch OOM.
+#   small    —  8 GPU × batch=2 × 2000 iter, wandb online. Use to check convergence.
+#   full     —  8 GPU × batch=2 × 10000 iter, wandb online. Recommended full run.
 #
 # Usage:
 #   bash local_jobs/warmup_launch.sh dryrun
 #   bash local_jobs/warmup_launch.sh full
 #
 # Overrides (env vars):
-#   NPROC=4        — GPU count (default 4)
+#   NPROC=8        — GPU count (default 8)
 #   BATCH=2        — physical batch size / GPU
 #   MAX_ITER=10000 — training iterations
 #   WANDB_MODE=online|offline
@@ -40,7 +40,7 @@ fi
 # ------------------------------------------------ mode presets
 case "$MODE" in
   dryrun)
-    NPROC=${NPROC:-4}
+    NPROC=${NPROC:-8}
     BATCH=${BATCH:-1}
     MAX_ITER=${MAX_ITER:-200}
     WANDB_MODE=${WANDB_MODE:-offline}
@@ -49,7 +49,7 @@ case "$MODE" in
     RUN_NAME=${RUN_NAME:-piper_warmup_dryrun_$(date +%Y%m%d_%H%M%S)}
     ;;
   small)
-    NPROC=${NPROC:-4}
+    NPROC=${NPROC:-8}
     BATCH=${BATCH:-2}
     MAX_ITER=${MAX_ITER:-2000}
     WANDB_MODE=${WANDB_MODE:-online}
@@ -58,7 +58,7 @@ case "$MODE" in
     RUN_NAME=${RUN_NAME:-piper_warmup_small_$(date +%Y%m%d_%H%M%S)}
     ;;
   full)
-    NPROC=${NPROC:-4}
+    NPROC=${NPROC:-8}
     BATCH=${BATCH:-2}
     MAX_ITER=${MAX_ITER:-10000}
     WANDB_MODE=${WANDB_MODE:-online}

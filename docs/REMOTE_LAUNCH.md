@@ -5,7 +5,7 @@ End-to-end steps to bring up DreamDojo Piper warmup training on a fresh remote b
 ## Prerequisites
 
 - Linux box with CUDA 12.8-compatible NVIDIA driver
-- **≥ 4 × 80 GB GPUs** (A100/A800/H100). 40 GB cards likely OOM at 1440×640 latent grid.
+- **≥ 8 × 80 GB GPUs** (A100/A800/H100) for default configuration; 4 GPUs also works via `NPROC=4`. 40 GB cards likely OOM at 1440×640 latent grid.
 - **≥ 450 GB free disk** (210 dataset + 17 teacher + 30 venv + 100 buffer)
 - `git`, `curl`, `bash`, `python3.10+` on PATH
 - HuggingFace token with **read access to gated `nvidia/Cosmos-Predict2.5-2B`** — accept license at https://huggingface.co/nvidia/Cosmos-Predict2.5-2B first
@@ -59,7 +59,7 @@ tmux new -d -s dd-warmup 'bash local_jobs/warmup_launch.sh full 2>&1 | tee logs/
 tmux attach -t dd-warmup       # Ctrl-b d to detach
 ```
 
-Defaults: **4 GPU × batch 2 × 10 000 iter ≈ 50 h** at 18 s/iter.
+Defaults: **8 GPU × batch 2 × 10 000 iter ≈ 50 h** at 18 s/iter (each iter consumes 16 samples). On 4 GPUs (`NPROC=4`): same wall-clock but half the throughput per iter — effective batch 8 instead of 16.
 
 Checkpoints land in `dreamdojo_logs/cosmos_interactive/interactive_warmup/<RUN_NAME>/checkpoints/iter_00000<n>000/` every 1000 iter.
 
@@ -125,8 +125,8 @@ Overridable via CLI (`bash local_jobs/warmup_launch.sh full dataloader_train.bat
 
 | Knob | Default | Notes |
 |---|---|---|
-| `NPROC` | 4 | GPU count. Effective batch = NPROC × batch_size. |
-| `BATCH` | 2 (full mode) | Physical batch per GPU. OOM at 4+ on 80 GB. |
+| `NPROC` | 8 | GPU count. Effective batch = NPROC × batch_size. Override with `NPROC=4 bash ...`. |
+| `BATCH` | 2 (full mode) | Physical batch per GPU. Try 4 on 80 GB if headroom permits (memory scales roughly linearly). |
 | `MAX_ITER` | 10000 | Paper uses 10k iter × batch 256 = 2.56M sample-iters. Ours is 5% of that. |
 | `SAVE_ITER` | 1000 | Ckpt frequency. |
 | `WANDB_MODE` | online | Set `offline` or `disabled` if no wandb login. |
