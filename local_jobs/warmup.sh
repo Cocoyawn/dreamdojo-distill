@@ -29,4 +29,5 @@ torchrun --nnodes=$NNODES --nproc_per_node=$NPROC \
   -- experiment=cosmos_predict2p5_2B_action_piper_warmup_no_s3 \
   job.wandb_mode=${WANDB_MODE:-online} \
   trainer.max_iter="${MAX_ITER:-20000}" \
+  "$@" \
   2>&1 | tee "$LOG_FILE"
