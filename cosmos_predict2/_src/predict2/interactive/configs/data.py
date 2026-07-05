@@ -201,14 +201,14 @@ gr00t_customized_piper_dataset_long = L(MultiVideoActionDataset)(
     cr1_embeddings_path="datasets/cr1_empty_string_text_embeddings.pt",
 )
 
-# 720x320 variants (new teacher).
+# 720x320 variants (new teacher). cam_vertical is portrait (H=720, W=320).
 gr00t_customized_piper_720_320_dataset = L(MultiVideoActionDataset)(
     num_frames=13,
     dataset_path=piper_path,
     dataset_mixing_weights=piper_mixing_weights,
     data_split="train",
-    height=320,
-    width=720,
+    height=720,
+    width=320,
     video_key="video.cam_vertical",
     fps=10,
     cr1_embeddings_path="datasets/cr1_empty_string_text_embeddings.pt",
@@ -218,8 +218,8 @@ gr00t_customized_piper_720_320_dataset_long = L(MultiVideoActionDataset)(
     dataset_path=piper_path,
     dataset_mixing_weights=piper_mixing_weights,
     data_split="train",
-    height=320,
-    width=720,
+    height=720,
+    width=320,
     video_key="video.cam_vertical",
     fps=10,
     cr1_embeddings_path="datasets/cr1_empty_string_text_embeddings.pt",

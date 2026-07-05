@@ -83,6 +83,13 @@ def parse_arguments() -> argparse.Namespace:
     )
     parser.add_argument("--input_video_root", type=str, default="bridge/annotation/test_100", help="Action root")
     parser.add_argument("--save_root", type=str, default="results/image2world", help="Save root")
+    parser.add_argument(
+        "--dataset_path",
+        type=str,
+        default=None,
+        help="Override the lerobot dataset path (comma-separated list allowed). "
+             "If unset, falls back to get_data_path(embodiment).",
+    )
 
     parser.add_argument("--start", type=int, default=0, help="Start index for processing files")
     parser.add_argument("--end", type=int, default=100, help="End index for processing files")
@@ -193,6 +200,13 @@ def main():
         dataset_path, dataset_mixing_weights = get_data_path("pretrain")
     else:
         raise ValueError(f"Experiment {args.experiment} not supported")
+
+    # CLI override — lets a single experiment point at different lerobot datasets
+    # without editing configs/*.yaml.
+    if args.dataset_path is not None:
+        dataset_path = [p.strip() for p in args.dataset_path.split(",")]
+        dataset_mixing_weights = None
+        logger.info(f"--dataset_path override: {dataset_path}")
 
     logger.info(f"Using dataset path: {dataset_path}")
     logger.info(f"Using dataset mixing weights: {dataset_mixing_weights}")

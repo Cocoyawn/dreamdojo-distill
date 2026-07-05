@@ -15,6 +15,7 @@ NODE_RANK=${NODE_RANK:-0}
 
 CKPT=${CKPT:-checkpoints/dreamdojo-piper-insert-mouse-battery-720-320-10fps-40k/model}
 SAVE_ROOT=${SAVE_ROOT:-datasets/piper_720_320_warmup_regenerated_4step}
+DATASET_PATH=${DATASET_PATH:-}
 START=${START:-0}
 END=${END:-10000}
 
@@ -27,12 +28,18 @@ if [ ! -d "$CKPT" ]; then
 fi
 
 echo "=== teacher_gen 720x320 ==="
-echo "  ckpt      : $CKPT"
-echo "  save_root : $SAVE_ROOT"
-echo "  range     : [$START, $END)"
-echo "  NPROC     : $NPROC"
-echo "  log       : $LOG_FILE"
+echo "  ckpt        : $CKPT"
+echo "  save_root   : $SAVE_ROOT"
+echo "  dataset_path: ${DATASET_PATH:-<default (get_data_path(piper))>}"
+echo "  range       : [$START, $END)"
+echo "  NPROC       : $NPROC"
+echo "  log         : $LOG_FILE"
 echo
+
+DATASET_ARG=()
+if [ -n "$DATASET_PATH" ]; then
+    DATASET_ARG=(--dataset_path "$DATASET_PATH")
+fi
 
 torchrun --nnodes=$NNODES --nproc_per_node=$NPROC \
   --master_port=$MASTER_PORT --master_addr "$MASTER_ADDR" \
@@ -41,7 +48,8 @@ torchrun --nnodes=$NNODES --nproc_per_node=$NPROC \
   --experiment=dreamdojo_2b_720_320_piper \
   --ckpt_path "$CKPT" \
   --save_root "$SAVE_ROOT" \
-  --resolution 320,720 --video_key video.cam_vertical --fps 10 \
+  "${DATASET_ARG[@]}" \
+  --resolution 720,320 --video_key video.cam_vertical --fps 10 \
   --guidance 0 --chunk_size 12 --start "$START" --end "$END" \
   --query_steps 0,9,18,27,34 --context_parallel_size 1 \
   2>&1 | tee "$LOG_FILE"
