@@ -385,6 +385,23 @@ ACTION_GR00T_PIPER_SELF_FORCING = make_experiment(
     ),
 )
 
+ACTION_GR00T_PIPER_720_320_SELF_FORCING = make_experiment(
+    name="piper_720_320",
+    data="gr00t_customized_piper_720_320_long",
+    overrides=dict(
+        job=dict(project="dreamdojo", group="interactive_self_forcing"),
+        checkpoint=dict(load_path="", strict_resume=False),
+        model=dict(
+            config=dict(
+                teacher_load_from=dict(
+                    load_path="checkpoints/dreamdojo-piper-insert-mouse-battery-720-320-10fps-40k/model",
+                    credentials="",
+                ),
+            ),
+        ),
+    ),
+)
+
 cs = ConfigStore.instance()
 
 cs.store(
@@ -429,4 +446,11 @@ cs.store(
     package="_global_",
     name="cosmos_predict2p5_2B_action_piper_self_forcing_no_s3",
     node=build_no_s3_run(ACTION_GR00T_PIPER_SELF_FORCING),
+)
+
+cs.store(
+    group="experiment",
+    package="_global_",
+    name="cosmos_predict2p5_2B_action_piper_720_320_self_forcing_no_s3",
+    node=build_no_s3_run(ACTION_GR00T_PIPER_720_320_SELF_FORCING),
 )

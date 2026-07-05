@@ -5,32 +5,55 @@
 #   1. Sanity-check env (GPU count, disk, network)
 #   2. Install python deps via install.sh (uv + torch + xformers + ...)
 #   3. Prompt for HF token, huggingface-cli login
-#   4. Download dataset (210 GB tar) + extract
-#   5. Download teacher ckpt (17 GB, needed for SF; benign to have during warmup)
-#   6. Download cr1 embedding (small file inside nvidia/Cosmos-Predict2.5-2B)
+#   4. Download teacher ckpt (default: new 720x320 teacher)
+#   5. Download cr1 embedding
+#   6. (Optional) Download pre-generated warmup dataset if PIPELINE=1440x640
 #   7. Verify everything is in place
 #
-# Usage (from the repo root):
-#   bash local_jobs/setup_remote.sh              # interactive; will ask for HF token
-#   HF_TOKEN=hf_xxx bash local_jobs/setup_remote.sh   # non-interactive
-#   SKIP_DEPS=1 SKIP_TEACHER=1 bash local_jobs/setup_remote.sh   # skip stages
+# NOTE: For the 720x320 pipeline, no pre-generated dataset is downloaded — you
+# run `bash local_jobs/teacher_gen_720x320.sh` yourself to regenerate ODE data
+# with the new teacher. Only the RAW lerobot data + teacher + cr1 embedding are
+# needed to bootstrap.
 #
-# Skip flags (any truthy value):
-#   SKIP_DEPS=1      — don't reinstall .venv
-#   SKIP_DATASET=1   — don't re-download dataset
-#   SKIP_TEACHER=1   — don't download teacher ckpt (safe if only doing warmup)
-#   SKIP_CR1=1       — don't download cr1 embedding (dangerous — warmup needs it)
-#   SKIP_VERIFY=1    — skip final verify step
+# Usage:
+#   bash local_jobs/setup_remote.sh                       # default: 720x320 pipeline
+#   PIPELINE=1440x640 bash local_jobs/setup_remote.sh     # old 1440x640 pipeline
+#   HF_TOKEN=hf_xxx bash local_jobs/setup_remote.sh       # non-interactive
+#
+# Skip flags:
+#   SKIP_DEPS=1        — don't reinstall .venv
+#   SKIP_TEACHER=1     — don't download teacher ckpt
+#   SKIP_CR1=1         — don't download cr1 embedding (dangerous — warmup needs it)
+#   SKIP_DATASET=1     — don't download pre-generated warmup dataset (720x320: always skipped)
+#   SKIP_LEROBOT=1     — don't download raw lerobot data (assumes present at datasets/piper_insert_mouse_battery_lerobot/)
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 REPO=$PWD
+PIPELINE=${PIPELINE:-720x320}
+
+case "$PIPELINE" in
+  720x320)
+    TEACHER_REPO="Shirk6/dreamdojo-piper-insert-mouse-battery-720-320-10fps-40k"
+    TEACHER_DIR_NAME="dreamdojo-piper-insert-mouse-battery-720-320-10fps-40k"
+    PREGEN_DATASET_REPO=""              # regenerated locally by teacher_gen_720x320.sh
+    ;;
+  1440x640)
+    TEACHER_REPO="Shirk6/dreamdojo-piper-vertical-1440-640-fps10-iter30000"
+    TEACHER_DIR_NAME="dreamdojo-piper-vertical-1440-640-fps10-iter30000"
+    PREGEN_DATASET_REPO="Cocoyawn32/dreamdojo-piper-warmup-4step"
+    ;;
+  *)
+    echo "Unknown PIPELINE=$PIPELINE. Valid: 720x320, 1440x640"; exit 1;;
+esac
 
 echo "======================================================================"
 echo "  DreamDojo remote setup"
-echo "  repo: $REPO"
-echo "  date: $(date)"
+echo "  pipeline: $PIPELINE"
+echo "  teacher : $TEACHER_REPO"
+echo "  repo    : $REPO"
+echo "  date    : $(date)"
 echo "======================================================================"
 echo
 
@@ -100,18 +123,18 @@ fi
 echo "  ✅ logged in as: $WHO"
 echo
 
-# ---------------------------------------------------------------- dataset
+# ---------------------------------------------------------------- dataset (pre-generated, only 1440x640)
 DATASET_DIR="$REPO/datasets/piper_warmup_regenerated_4step"
-if [ -z "${SKIP_DATASET:-}" ]; then
-  echo "=== [3/5] Downloading dataset (~210 GB) ==="
+if [ "$PIPELINE" = "1440x640" ] && [ -z "${SKIP_DATASET:-}" ]; then
+  echo "=== [3/6] Downloading pre-generated dataset (~210 GB) [1440x640 only] ==="
   mkdir -p "$REPO/datasets"
 
   if [ -d "$DATASET_DIR" ] && [ "$(ls "$DATASET_DIR/actions" 2>/dev/null | wc -l)" = "10000" ]; then
     echo "  dataset already extracted at $DATASET_DIR (10000 samples). Skipping."
   else
-    echo "  downloading Cocoyawn32/dreamdojo-piper-warmup-4step ..."
+    echo "  downloading $PREGEN_DATASET_REPO ..."
     .venv/bin/hf download \
-      Cocoyawn32/dreamdojo-piper-warmup-4step \
+      "$PREGEN_DATASET_REPO" \
       --repo-type=dataset \
       --local-dir "$DATASET_DIR"
 
@@ -127,45 +150,63 @@ if [ -z "${SKIP_DATASET:-}" ]; then
     echo "  ✅ dataset extracted at $DATASET_DIR"
   fi
   echo
+elif [ "$PIPELINE" = "720x320" ]; then
+  echo "=== [3/6] Skipping pre-generated dataset (720x320 pipeline regenerates it locally via teacher_gen_720x320.sh) ==="
+  echo
 else
-  echo "=== [3/5] SKIP_DATASET=1 — skipping dataset download ==="
+  echo "=== [3/6] SKIP_DATASET=1 — skipping dataset download ==="
+  echo
+fi
+
+# ---------------------------------------------------------------- raw lerobot data (required for teacher_gen)
+LEROBOT_DIR="$REPO/datasets/piper_insert_mouse_battery_lerobot"
+if [ -z "${SKIP_LEROBOT:-}" ] && [ ! -d "$LEROBOT_DIR" ]; then
+  echo "=== [4/6] Raw lerobot data ==="
+  echo "  ⚠️  $LEROBOT_DIR not found."
+  echo "     Download it manually to that path, or symlink from a shared mount, then re-run."
+  echo "     Skipping for now (will not block setup)."
+  echo
+else
+  echo "=== [4/6] Raw lerobot data present at $LEROBOT_DIR ==="
   echo
 fi
 
 # ---------------------------------------------------------------- teacher ckpt
-TEACHER_DIR="$REPO/checkpoints/dreamdojo-piper-vertical-1440-640-fps10-iter30000"
+TEACHER_DIR="$REPO/checkpoints/$TEACHER_DIR_NAME"
 if [ -z "${SKIP_TEACHER:-}" ]; then
-  echo "=== [4/5] Downloading teacher checkpoint (~17 GB, for self-forcing stage) ==="
+  echo "=== [5/6] Downloading teacher checkpoint ==="
+  echo "  repo    : $TEACHER_REPO"
+  echo "  local   : $TEACHER_DIR"
   mkdir -p "$REPO/checkpoints"
-  if [ -f "$TEACHER_DIR/model_ema_bf16.pt" ] && [ -f "$TEACHER_DIR/model/.metadata" ]; then
+  if [ -f "$TEACHER_DIR/model/.metadata" ]; then
     echo "  teacher ckpt already at $TEACHER_DIR. Skipping."
   else
     .venv/bin/hf download \
-      Shirk6/dreamdojo-piper-vertical-1440-640-fps10-iter30000 \
+      "$TEACHER_REPO" \
       --local-dir "$TEACHER_DIR"
     echo "  ✅ teacher ckpt downloaded"
   fi
   echo
 else
-  echo "=== [4/5] SKIP_TEACHER=1 — teacher ckpt skipped (SF stage will fail without it) ==="
+  echo "=== [5/6] SKIP_TEACHER=1 — teacher ckpt skipped ==="
   echo
 fi
 
 # ---------------------------------------------------------------- cr1 embedding
 CR1_LINK="$REPO/datasets/cr1_empty_string_text_embeddings.pt"
 if [ -z "${SKIP_CR1:-}" ]; then
-  echo "=== [5/5] Downloading cr1 empty-string text embedding ==="
+  echo "=== [6/6] Downloading cr1 empty-string text embedding ==="
   if [ -f "$CR1_LINK" ] || [ -L "$CR1_LINK" ]; then
     echo "  cr1 embedding already present at $CR1_LINK. Skipping."
   else
-    # Try Cosmos-Predict2.5-2B first (has robot/action-cond/... subfolder)
-    echo "  downloading nvidia/Cosmos-Predict2.5-2B (only the cr1 embedding file, ~200 MB) ..."
+    echo "  downloading nvidia/Cosmos-Predict2.5-2B (cr1 embedding file only, ~200 MB) ..."
     if .venv/bin/hf download \
         nvidia/Cosmos-Predict2.5-2B \
         --include "robot/action-cond/cr1_empty_string_text_embeddings.pt" \
         --local-dir /tmp/cosmos25_partial 2>&1 | tail -5; then
       SRC=/tmp/cosmos25_partial/robot/action-cond/cr1_empty_string_text_embeddings.pt
       if [ -f "$SRC" ]; then
+        mkdir -p "$REPO/datasets"
         ln -sf "$SRC" "$CR1_LINK"
         echo "  ✅ cr1 symlinked → $SRC"
       else
@@ -180,12 +221,12 @@ if [ -z "${SKIP_CR1:-}" ]; then
   fi
   echo
 else
-  echo "=== [5/5] SKIP_CR1=1 — cr1 embedding skipped (warmup training will fail without it) ==="
+  echo "=== [6/6] SKIP_CR1=1 — cr1 embedding skipped (warmup training will fail without it) ==="
   echo
 fi
 
-# ---------------------------------------------------------------- verify
-if [ -z "${SKIP_VERIFY:-}" ]; then
+# ---------------------------------------------------------------- verify (only for 1440x640 pipeline with pre-generated dataset)
+if [ "$PIPELINE" = "1440x640" ] && [ -z "${SKIP_VERIFY:-}" ]; then
   echo "=== Verifying installation ==="
   .venv/bin/python local_jobs/verify_dataset.py "$DATASET_DIR" || {
     echo "  ⚠️  verify_dataset.py reported issues; inspect above"
@@ -195,7 +236,17 @@ fi
 
 echo
 echo "======================================================================"
-echo "  ✅ Setup complete. Next step:"
-echo "     bash local_jobs/warmup_launch.sh dryrun     # 200-iter sanity check"
-echo "     bash local_jobs/warmup_launch.sh full       # full 10k-iter run"
+echo "  ✅ Setup complete. Pipeline: $PIPELINE"
+echo
+if [ "$PIPELINE" = "720x320" ]; then
+  echo "  Next steps:"
+  echo "    1. Ensure raw lerobot data is at datasets/piper_insert_mouse_battery_lerobot/"
+  echo "    2. bash local_jobs/teacher_gen_720x320.sh       # regenerate ODE dataset"
+  echo "    3. bash local_jobs/warmup_720x320.sh            # warmup training"
+  echo "    4. WARMUP_CKPT=... bash local_jobs/self_forcing_720x320.sh   # SF distillation"
+else
+  echo "  Next steps:"
+  echo "    1. bash local_jobs/warmup_launch.sh dryrun      # 200-iter sanity check"
+  echo "    2. bash local_jobs/warmup_launch.sh full        # full 10k-iter run"
+fi
 echo "======================================================================"

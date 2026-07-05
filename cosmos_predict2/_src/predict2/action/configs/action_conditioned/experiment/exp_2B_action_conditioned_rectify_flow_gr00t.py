@@ -845,6 +845,22 @@ DREAMDOJO_2B_1440_640_PIPER = LazyDict(
 )
 
 
+DREAMDOJO_2B_720_320_PIPER = LazyDict(
+    dict(
+        defaults=[
+            "/experiment/cosmos_predict2p5_2B_action_conditioned_gr00t_gr1_customized_13frame_full_16nodes_release_oss",
+            {"override /data_train": "gr00t_customized_piper_720_320"},
+            {"override /data_val": "gr00t_customized_piper_720_320"},
+            "_self_",
+        ],
+        job=dict(group="piper", name="dreamdojo_2b_720_320_piper", project="dreamdojo"),
+        model=dict(config=dict(state_t=1 + 12 // 4, net=dict(action_dim=384))),
+        dataloader_train=dict(batch_size=4),
+    ),
+    flags={"allow_objects": True},
+)
+
+
 cs = ConfigStore.instance()
 
 for _item, _item_wo_resume, _item_mock_wo_resume in [
@@ -889,6 +905,10 @@ for _item, _item_wo_resume, _item_mock_wo_resume in [
     [
         DREAMDOJO_2B_1440_640_PIPER,
         *build_debug_runs(DREAMDOJO_2B_1440_640_PIPER),
+    ],
+    [
+        DREAMDOJO_2B_720_320_PIPER,
+        *build_debug_runs(DREAMDOJO_2B_720_320_PIPER),
     ],
 ]:
     cs.store(group="experiment", package="_global_", name=f"{_item['job']['name']}", node=_item)

@@ -192,6 +192,16 @@ ACTION_GR00T_WARMUP_PIPER = make_experiment(
     ),
 )
 
+ACTION_GR00T_WARMUP_PIPER_720_320 = make_experiment(
+    name="piper_720_320",
+    data="gr00t_piper_720_320_warmup",
+    overrides=dict(
+        job=dict(project="dreamdojo", group="interactive_warmup"),
+        checkpoint=dict(load_path="", strict_resume=False),
+        model=dict(config=dict(fps=10)),
+    ),
+)
+
 """
 torchrun --nproc_per_node=1 --master_port=12341 -m scripts.train --config=cosmos_predict2/_src/predict2/interactive/configs/config_warmup.py -- experiment=cosmos_predict2p5_2B_action_gr00t_gr1_warmup
 """
@@ -252,4 +262,11 @@ cs.store(
     package="_global_",
     name="cosmos_predict2p5_2B_action_piper_warmup_no_s3",
     node=build_no_s3_run(ACTION_GR00T_WARMUP_PIPER),
+)
+
+cs.store(
+    group="experiment",
+    package="_global_",
+    name="cosmos_predict2p5_2B_action_piper_720_320_warmup_no_s3",
+    node=build_no_s3_run(ACTION_GR00T_WARMUP_PIPER_720_320),
 )

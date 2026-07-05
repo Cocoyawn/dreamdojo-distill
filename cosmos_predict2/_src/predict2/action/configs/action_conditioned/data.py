@@ -118,6 +118,27 @@ gr00t_customized_piper_dataset_long = L(MultiVideoActionDataset)(
     fps=10,
 )
 
+# 720x320 variant — same source data / view / fps as above, only resolution differs.
+# Matches Shirk6/dreamdojo-piper-insert-mouse-battery-720-320-10fps-40k teacher training.
+gr00t_customized_piper_720_320_dataset = L(MultiVideoActionDataset)(
+    num_frames=13,
+    dataset_path=piper_dataset_path,
+    data_split="train",
+    height=320,
+    width=720,
+    video_key="video.cam_vertical",
+    fps=10,
+)
+gr00t_customized_piper_720_320_dataset_long = L(MultiVideoActionDataset)(
+    num_frames=49,
+    dataset_path=piper_dataset_path,
+    data_split="train",
+    height=320,
+    width=720,
+    video_key="video.cam_vertical",
+    fps=10,
+)
+
 
 # create dataloader for each dataset
 def get_sampler(dataset):
@@ -274,4 +295,16 @@ def register_training_and_val_data():
             package=f"dataloader_{split}",
             name="gr00t_customized_piper_long",
             node=L(get_dataloader_with_sampler)(dataset=gr00t_customized_piper_dataset_long, batch_size=1, drop_last=True, num_workers=0, pin_memory=False),
+        )
+        cs.store(
+            group=f"data_{split}",
+            package=f"dataloader_{split}",
+            name="gr00t_customized_piper_720_320",
+            node=L(get_dataloader_with_sampler)(dataset=gr00t_customized_piper_720_320_dataset, batch_size=1, drop_last=True, num_workers=0, pin_memory=False),
+        )
+        cs.store(
+            group=f"data_{split}",
+            package=f"dataloader_{split}",
+            name="gr00t_customized_piper_720_320_long",
+            node=L(get_dataloader_with_sampler)(dataset=gr00t_customized_piper_720_320_dataset_long, batch_size=1, drop_last=True, num_workers=0, pin_memory=False),
         )
