@@ -61,10 +61,12 @@ logs/
 dreamdojo_logs/
 
 # Data / model artifact directories (large binaries)
-checkpoints/
-datasets/
-results/
-hf_cache/
+# Anchor to repo root — don't accidentally ignore source dirs named "datasets/"
+# under cosmos_predict2/, groot_dreams/, etc.
+/checkpoints/
+/datasets/
+/results/
+/hf_cache/
 
 # Debug / Output
 debug/
