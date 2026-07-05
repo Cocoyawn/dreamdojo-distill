@@ -28,8 +28,11 @@ if [ -f "$PROXY_SH" ]; then
   # shellcheck disable=SC1090
   source "$PROXY_SH"
 fi
-export HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-1}
-export TRANSFORMERS_OFFLINE=${TRANSFORMERS_OFFLINE:-1}
+# HF cache location. Do NOT force offline mode — teacher_gen / warmup need to
+# download tokenizer.pth (WAN2.1 VAE) and text_encoder weights on first run.
+# If you want fully offline, set HF_HUB_OFFLINE=1 explicitly in your env.
+export HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-0}
+export TRANSFORMERS_OFFLINE=${TRANSFORMERS_OFFLINE:-0}
 
 if [ -f "$VENV/bin/activate" ]; then
   # shellcheck disable=SC1091
