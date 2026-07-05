@@ -160,14 +160,22 @@ fi
 
 # ---------------------------------------------------------------- raw lerobot data (required for teacher_gen)
 LEROBOT_DIR="$REPO/datasets/piper_insert_mouse_battery_lerobot"
-if [ -z "${SKIP_LEROBOT:-}" ] && [ ! -d "$LEROBOT_DIR" ]; then
-  echo "=== [4/6] Raw lerobot data ==="
-  echo "  ⚠️  $LEROBOT_DIR not found."
-  echo "     Download it manually to that path, or symlink from a shared mount, then re-run."
-  echo "     Skipping for now (will not block setup)."
+if [ -z "${SKIP_LEROBOT:-}" ]; then
+  echo "=== [4/6] Raw lerobot data (~4 GB) ==="
+  if [ -d "$LEROBOT_DIR" ] && [ -f "$LEROBOT_DIR/meta/info.json" ]; then
+    echo "  lerobot data already present at $LEROBOT_DIR. Skipping."
+  else
+    echo "  downloading Shirk6/piper_insert_mouse_battery_lerobot ..."
+    .venv/bin/hf download \
+      Shirk6/piper_insert_mouse_battery_lerobot \
+      --repo-type=dataset \
+      --local-dir "$LEROBOT_DIR"
+    echo "  ✅ lerobot data downloaded"
+  fi
   echo
 else
-  echo "=== [4/6] Raw lerobot data present at $LEROBOT_DIR ==="
+  echo "=== [4/6] SKIP_LEROBOT=1 — lerobot data download skipped ==="
+  echo "     teacher_gen will fail without this. Ensure $LEROBOT_DIR/meta/info.json exists."
   echo
 fi
 

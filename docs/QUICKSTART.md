@@ -66,8 +66,8 @@ echo -n "$HF_TOKEN" > ~/.cache/huggingface/token
 ## Step 4 — download raw lerobot data (4 GB, source for teacher_gen)
 
 ```bash
-.venv/bin/hf download \
-  <your-lerobot-piper-repo> \
+HF_HUB_ENABLE_HF_TRANSFER=1 .venv/bin/hf download \
+  Shirk6/piper_insert_mouse_battery_lerobot \
   --repo-type=dataset \
   --local-dir datasets/piper_insert_mouse_battery_lerobot
 ```
