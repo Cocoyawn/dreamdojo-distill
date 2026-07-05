@@ -195,16 +195,18 @@ fi
 # ---------------------------------------------------------------- cr1 embedding
 CR1_LINK="$REPO/datasets/cr1_empty_string_text_embeddings.pt"
 if [ -z "${SKIP_CR1:-}" ]; then
-  echo "=== [6/6] Downloading cr1 empty-string text embedding ==="
+  echo "=== [6/6] Downloading cr1 empty-string text embedding (~100 MB) ==="
   if [ -f "$CR1_LINK" ] || [ -L "$CR1_LINK" ]; then
     echo "  cr1 embedding already present at $CR1_LINK. Skipping."
   else
-    echo "  downloading nvidia/Cosmos-Predict2.5-2B (cr1 embedding file only, ~200 MB) ..."
+    # Public mirror (avoids nvidia/Cosmos-Predict2.5-2B gated license).
+    echo "  downloading Cocoyawn32/cosmos-predict2p5-cr1-empty-embedding ..."
     if .venv/bin/hf download \
-        nvidia/Cosmos-Predict2.5-2B \
-        --include "robot/action-cond/cr1_empty_string_text_embeddings.pt" \
-        --local-dir /tmp/cosmos25_partial 2>&1 | tail -5; then
-      SRC=/tmp/cosmos25_partial/robot/action-cond/cr1_empty_string_text_embeddings.pt
+        Cocoyawn32/cosmos-predict2p5-cr1-empty-embedding \
+        --repo-type=dataset \
+        --include "cr1_empty_string_text_embeddings.pt" \
+        --local-dir /tmp/cr1_mirror 2>&1 | tail -5; then
+      SRC=/tmp/cr1_mirror/cr1_empty_string_text_embeddings.pt
       if [ -f "$SRC" ]; then
         mkdir -p "$REPO/datasets"
         ln -sf "$SRC" "$CR1_LINK"
@@ -213,9 +215,7 @@ if [ -z "${SKIP_CR1:-}" ]; then
         echo "  ❌ downloaded but file not at $SRC"; exit 1
       fi
     else
-      echo "  ❌ download failed. Repo may be gated — accept license at:"
-      echo "     https://huggingface.co/nvidia/Cosmos-Predict2.5-2B"
-      echo "     Then re-run this script."
+      echo "  ❌ download failed. Check HF token / network."
       exit 1
     fi
   fi

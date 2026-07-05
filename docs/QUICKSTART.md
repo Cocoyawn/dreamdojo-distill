@@ -54,8 +54,6 @@ Verify:
 
 ## Step 3 — HuggingFace authentication
 
-Accept license at https://huggingface.co/nvidia/Cosmos-Predict2.5-2B (required for cr1 embedding).
-
 ```bash
 export HF_TOKEN=hf_xxxxxxxxxxxx
 export HF_HUB_ENABLE_HF_TRANSFER=1
@@ -102,11 +100,12 @@ ls checkpoints/dreamdojo-piper-insert-mouse-battery-720-320-10fps-40k/model/
 
 ```bash
 .venv/bin/hf download \
-  nvidia/Cosmos-Predict2.5-2B \
-  --include "robot/action-cond/cr1_empty_string_text_embeddings.pt" \
-  --local-dir /tmp/cosmos25_partial
+  Cocoyawn32/cosmos-predict2p5-cr1-empty-embedding \
+  --repo-type=dataset \
+  --include "cr1_empty_string_text_embeddings.pt" \
+  --local-dir /tmp/cr1_mirror
 
-ln -sf /tmp/cosmos25_partial/robot/action-cond/cr1_empty_string_text_embeddings.pt \
+ln -sf /tmp/cr1_mirror/cr1_empty_string_text_embeddings.pt \
        datasets/cr1_empty_string_text_embeddings.pt
 ```
 
