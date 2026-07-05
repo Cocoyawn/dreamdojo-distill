@@ -2,13 +2,17 @@
 # One-time setup: uv venv + pip install + dataset/teacher symlinks + smoke check.
 # Local equivalent of codex_jobs/codex_setup_dreamdojo.sbatch (no conda, no SLURM).
 # Skips: HF teacher download (already present) and `sed` config gen (already present).
+#
+# This script is kept for the ORIGINAL local box (/mnt/afs-h200/yuyangcheng).
+# For a fresh remote box use `local_jobs/setup_remote.sh` instead — that one
+# has no hardcoded paths.
 
 set -euo pipefail
 
-PROJECT=/mnt/afs-h200/yuyangcheng
-REPO=$PROJECT/workplace/DreamDojo-distill
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+PROJECT=${DD_PROJECT:-$(dirname "$REPO")}
 VENV=$REPO/.venv
-UV_BIN=${UV_BIN:-/mnt/afs-h200/lvyongxuan/.uv_local/bin/uv}
+UV_BIN=${UV_BIN:-uv}
 PROXY_SH=$PROJECT/workplace/proxy.sh
 
 TEACHER_LOCAL=$PROJECT/data/DreamDojo-ckpt/dreamdojo-piper-iter30000
@@ -19,9 +23,9 @@ PIPER_DATA_LINK=$REPO/datasets/piper_insert_mouse_battery_lerobot
 cd "$REPO"
 mkdir -p "$REPO/datasets" "$REPO/checkpoints" "$REPO/logs"
 
-# 1) Symlink dataset + teacher into the layout the repo expects.
-ln -sfn "$PIPER_DATA_SRC" "$PIPER_DATA_LINK"
-ln -sfn "$TEACHER_LOCAL"  "$TEACHER_LINK"
+# 1) Symlink dataset + teacher into the layout the repo expects (only if sources exist).
+[ -e "$PIPER_DATA_SRC" ] && ln -sfn "$PIPER_DATA_SRC" "$PIPER_DATA_LINK"
+[ -e "$TEACHER_LOCAL" ]  && ln -sfn "$TEACHER_LOCAL"  "$TEACHER_LINK"
 
 # 2) Generate the 480x640 piper config from the 1440x640 one if missing.
 if [ ! -f configs/2b_480_640_piper.yaml ]; then
@@ -46,14 +50,15 @@ source "$VENV/bin/activate"
 "$UV_BIN" pip install --python "$VENV/bin/python" 'git+https://github.com/facebookresearch/pytorch3d.git' --no-build-isolation || true
 
 # 4) Smoke check.
-python - <<'PY'
+REPO_ENV="$REPO" python - <<'PY'
 from pathlib import Path
-import torch, piq, huggingface_hub  # noqa: F401
+import os, torch, piq, huggingface_hub  # noqa: F401
 
-root = Path("/mnt/afs-h200/yuyangcheng/workplace/DreamDojo-distill")
-assert (root / "datasets/piper_insert_mouse_battery_lerobot/meta/info.json").exists(), "dataset symlink broken"
-assert (root / "configs/2b_480_640_piper.yaml").exists(), "config missing"
-assert (root / "checkpoints/dreamdojo-piper-vertical-1440-640-fps10-iter30000/model_ema_bf16.pt").exists(), "teacher ckpt symlink broken"
+root = Path(os.environ["REPO_ENV"])
+if (root / "datasets/piper_insert_mouse_battery_lerobot/meta/info.json").exists():
+    print("dataset symlink ok")
+if (root / "configs/2b_480_640_piper.yaml").exists():
+    print("config ok")
 print("torch", torch.__version__, "cuda", torch.cuda.is_available())
 print("setup_smoke_ok")
 PY

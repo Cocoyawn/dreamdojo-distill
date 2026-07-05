@@ -4,11 +4,15 @@
 
 set -euo pipefail
 
-PROJECT=/mnt/afs-h200/yuyangcheng
-REPO=$PROJECT/workplace/DreamDojo-distill
+# REPO = the DreamDojo-distill root (parent of local_jobs/).
+# PROJECT = the parent of REPO — used only as a "home" area for auxiliary
+# caches (hf_cache, ckpt symlink targets, secrets). Override with
+# DD_PROJECT=/your/path if you want to relocate those caches elsewhere.
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+PROJECT=${DD_PROJECT:-$(dirname "$REPO")}
 VENV=$REPO/.venv
 LOG_DIR=$REPO/logs
-HF_CACHE=$PROJECT/data/hf_cache
+HF_CACHE=${DD_HF_CACHE:-$PROJECT/data/hf_cache}
 WANDB_ENV=$PROJECT/.secrets/wandb.env
 PROXY_SH=$PROJECT/workplace/proxy.sh
 
