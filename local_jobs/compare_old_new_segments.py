@@ -107,7 +107,9 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("root", nargs="?", default="datasets/piper_720_320_warmup_regenerated_4step")
     p.add_argument("--boundary", type=int, default=30000,
-                   help="First index of the NEW segment (default 30000)")
+                   help="First index of the NEW segment inside a single root (ignored when --other-root is set)")
+    p.add_argument("--other-root", type=str, default=None,
+                   help="If set, compare OLD=<other-root> vs NEW=<root> across two separate directories")
     p.add_argument("--n-samples", type=int, default=100,
                    help="Number of samples to draw from each segment for stats")
     p.add_argument("--seed", type=int, default=42)
@@ -119,34 +121,44 @@ def main() -> int:
 
     random.seed(args.seed)
 
-    # Pick sample ids
-    all_ids = sorted(int(f.stem) for f in (root / "actions").iterdir() if f.suffix == ".json")
-    old_ids = [i for i in all_ids if i < args.boundary]
-    new_ids = [i for i in all_ids if i >= args.boundary]
+    if args.other_root:
+        old_root = Path(args.other_root)
+        new_root = root
+        if not old_root.exists():
+            print(f"❌ {old_root} not found"); return 1
+        old_ids = sorted(int(f.stem) for f in (old_root / "actions").iterdir() if f.suffix == ".json")
+        new_ids = sorted(int(f.stem) for f in (new_root / "actions").iterdir() if f.suffix == ".json")
+        print(f"=== Cross-directory comparison ===")
+        print(f"  OLD root: {old_root}   (n={len(old_ids)})")
+        print(f"  NEW root: {new_root}   (n={len(new_ids)})")
+    else:
+        old_root = new_root = root
+        all_ids = sorted(int(f.stem) for f in (root / "actions").iterdir() if f.suffix == ".json")
+        old_ids = [i for i in all_ids if i < args.boundary]
+        new_ids = [i for i in all_ids if i >= args.boundary]
+        print(f"=== Segment sizes ===")
+        print(f"  old (idx < {args.boundary}): {len(old_ids)}")
+        print(f"  new (idx >= {args.boundary}): {len(new_ids)}")
 
     if not old_ids or not new_ids:
-        print(f"❌ boundary={args.boundary} splits into old={len(old_ids)} new={len(new_ids)}, need both non-empty")
+        print(f"❌ empty split: old={len(old_ids)} new={len(new_ids)}")
         return 1
-
-    print(f"=== Segment sizes ===")
-    print(f"  old (idx < {args.boundary}): {len(old_ids)}")
-    print(f"  new (idx >= {args.boundary}): {len(new_ids)}")
 
     n = min(args.n_samples, len(old_ids), len(new_ids))
     old_pick = random.sample(old_ids, n)
     new_pick = random.sample(new_ids, n)
 
     # Stats
-    old_stats = summarize_latents(root, old_pick, "OLD latents")
-    new_stats = summarize_latents(root, new_pick, "NEW latents")
+    old_stats = summarize_latents(old_root, old_pick, "OLD latents")
+    new_stats = summarize_latents(new_root, new_pick, "NEW latents")
 
     verdict_latent = compare_stats(old_stats, new_stats)
 
-    summarize_actions(root, old_pick, "OLD")
-    summarize_actions(root, new_pick, "NEW")
+    summarize_actions(old_root, old_pick, "OLD")
+    summarize_actions(new_root, new_pick, "NEW")
 
-    summarize_video(root, old_pick, "OLD")
-    summarize_video(root, new_pick, "NEW")
+    summarize_video(old_root, old_pick, "OLD")
+    summarize_video(new_root, new_pick, "NEW")
 
     print("\n" + "=" * 78)
     if verdict_latent:
