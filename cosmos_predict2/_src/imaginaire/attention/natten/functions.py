@@ -143,16 +143,27 @@ def natten_attention(
         backward_use_pt_reduction = backend_kwargs["backward_use_pt_reduction"]
         del backend_kwargs["backward_use_pt_reduction"]
 
+    # natten>=0.21 split its API: `natten.functional.attention` is the fused
+    # REGULAR (non-neighborhood) attention and does NOT accept is_causal or
+    # varlen kwargs. Causal / varlen use cases must go through
+    # `natten_multi_dim_attention` (neighborhood_attention_generic). We error
+    # loudly if someone tries here instead of silently ignoring the flags.
+    if is_causal:
+        raise NotImplementedError(
+            "is_causal=True is not supported by natten.functional.attention "
+            "(v0.21+). Use natten_multi_dim_attention or a different backend "
+            "(flash2/flash3/cudnn)."
+        )
+    if is_varlen:
+        raise NotImplementedError(
+            "varlen (cumulative_seqlen_*) is not supported by "
+            "natten.functional.attention (v0.21+)."
+        )
     return _natten_attention(
         query=query,
         key=key,
         value=value,
-        is_causal=is_causal,
         scale=scale,
-        cumulative_seqlen_Q=cumulative_seqlen_Q,
-        cumulative_seqlen_KV=cumulative_seqlen_KV,
-        max_seqlen_Q=max_seqlen_Q,
-        max_seqlen_KV=max_seqlen_KV,
         return_lse=return_lse,
         backend=natten_backend,
         backward_use_pt_reduction=backward_use_pt_reduction,
